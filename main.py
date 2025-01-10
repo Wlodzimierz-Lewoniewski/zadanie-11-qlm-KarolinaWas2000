@@ -2,45 +2,41 @@ import math
 from collections import Counter, defaultdict
 
 def tokenize(text):
-    return text.lower().split()
+    return text.lower().replace('.', '').split()
 
-def calculate_probabilities(documents, query, lambd=0.5):
-    tokenized_docs = [tokenize(doc) for doc in documents]
+def calculate_probabilities(docs, query, lambda_param=0.5):
+    tokenized_docs = [tokenize(doc) for doc in docs]
+    tokenized_query = tokenize(query)
 
-    corpus_word_counts = Counter(word for doc in tokenized_docs for word in doc)
-    total_corpus_words = sum(corpus_word_counts.values())
+    corpus = [word for doc in tokenized_docs for word in doc]
+    corpus_size = len(corpus)
+    corpus_freq = Counter(corpus)
 
-    probabilities = []
-    for doc_idx, doc in enumerate(tokenized_docs):
-        doc_word_counts = Counter(doc)
-        total_doc_words = sum(doc_word_counts.values())
+    results = []
 
-        query_prob = 0
-        for term in tokenize(query):
-            doc_prob = doc_word_counts[term] / total_doc_words if total_doc_words > 0 else 0
-            corpus_prob = corpus_word_counts[term] / total_corpus_words if total_corpus_words > 0 else 0
-            smoothed_prob = lambd * doc_prob + (1 - lambd) * corpus_prob
-            if smoothed_prob > 0:
-                query_prob += math.log(smoothed_prob)
-            else:
-                query_prob += float('-inf')
+    for idx, doc in enumerate(tokenized_docs):
+        doc_size = len(doc)
+        doc_freq = Counter(doc)
 
-        probabilities.append((doc_idx, query_prob))
+        log_prob = 0
+        for word in tokenized_query:
+            p_w_d = (doc_freq[word] / doc_size) if doc_size > 0 else 0
+            p_w_c = corpus_freq[word] / corpus_size
+            p_w = lambda_param * p_w_d + (1 - lambda_param) * p_w_c
 
-    return probabilities
+            if p_w > 0:
+                log_prob += math.log(p_w)
 
-def rank_documents(probabilities):
-    return [idx for idx, _ in sorted(probabilities, key=lambda x: (-x[1], x[0]))]
+        results.append((idx, log_prob))
 
-def main():
-    n = int(input())
-    documents = [input() for i in range(n)]
-    query = input()
+    results.sort(key=lambda x: (-x[1], x[0]))
 
-    probabilities = calculate_probabilities(documents, query)
-    ranked_indices = rank_documents(probabilities)
+    return [idx for idx, _ in results]
 
-    print(' '.join(map(str, ranked_indices)))
+n = int(input())
+documents = [input().strip() for _ in range(n)]
+query = input().strip()
 
-if __name__ == "__main__":
-    main()
+sorted_indices = calculate_probabilities(documents, query)
+
+print(sorted_indices)
