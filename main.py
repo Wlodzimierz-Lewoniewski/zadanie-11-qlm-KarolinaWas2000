@@ -34,7 +34,7 @@ def rank_documents(probabilities):
 
 def main():
     n = int(input())
-    documents = [input for i in range(n)]
+    documents = [input() for i in range(n)]
     query = input()
 
     probabilities = calculate_probabilities(documents, query)
